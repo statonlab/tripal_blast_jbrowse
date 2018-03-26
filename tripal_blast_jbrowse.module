@@ -71,7 +71,7 @@ function tripal_blast_jbrowse_generate_linkout_jbrowse($url_prefix, $hit, $info,
   // calculate the smallest and largest coordinate.
   $coords = [];
   $count = 0;
-  $strand = '1';
+  $strands = [];
   foreach ($info['HSPs'] as $hsp) {
     $count++;
 
@@ -85,6 +85,8 @@ function tripal_blast_jbrowse_generate_linkout_jbrowse($url_prefix, $hit, $info,
       $hsp_start = $hsp['Hsp_hit-to'];
       $hsp_end = $hsp['Hsp_hit-from'];
     }
+
+    $strands[] = $strand;
 
     // Add both the start & stop to the coordinate list.
     array_push($coords, $hsp['Hsp_hit-from'], $hsp['Hsp_hit-to']);
@@ -125,17 +127,32 @@ function tripal_blast_jbrowse_generate_linkout_jbrowse($url_prefix, $hit, $info,
     ]
   );
 
-  // Next we want to add our BLAST hit to the JBrowse.
-  $jbrowse_query['addFeatures'] = format_string(
-    'addFeatures=[{"seq_id":"!id","start":!min,"end":!max,"name":"!name","strand":!strand,"subfeatures":[!hspcoords]}]',
-    [
-      '!id' => $hit->{'linkout_id'},
-      '!name' => $info['query_name'] . ' Blast Hit',
-      '!min' => $min,
-      '!max' => $max,
-      '!hspcoords' => join(",", $ranges),
-      '!strand' => $strand,
-    ]);
+  $unique_strands = array_unique($strands);
+  if (count($unique_strands) === 1) {
+    $strand = end($strands);
+    // Next we want to add our BLAST hit to the JBrowse.
+    $jbrowse_query['addFeatures'] = format_string(
+      'addFeatures=[{"seq_id":"!id","start":!min,"end":!max,"name":"!name","strand":!strand,"subfeatures":[!hspcoords]}]',
+      [
+        '!id' => $hit->{'linkout_id'},
+        '!name' => $info['query_name'] . ' Blast Hit',
+        '!min' => $min,
+        '!max' => $max,
+        '!hspcoords' => join(",", $ranges),
+        '!strand' => $strand,
+      ]);
+  }
+  else {
+    $jbrowse_query['addFeatures'] = format_string(
+      'addFeatures=[{"seq_id":"!id","start":!min,"end":!max,"name":"!name","subfeatures":[!hspcoords]}]',
+      [
+        '!id' => $hit->{'linkout_id'},
+        '!name' => $info['query_name'] . ' Blast Hit',
+        '!min' => $min,
+        '!max' => $max,
+        '!hspcoords' => join(",", $ranges),
+      ]);
+  }
 
   // Then add a track to display our new feature.
   $jbrowse_query['addTracks'] = 'addTracks=[{"label":"blast","key":"BLAST Result","type":"JBrowse/View/Track/CanvasFeatures","store":"url"}]';
