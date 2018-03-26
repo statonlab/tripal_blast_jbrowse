@@ -1,6 +1,6 @@
 <?php
 
-function tripal_blast_blast_linkout_info() {
+function tripal_blast_jbrowse_blast_linkout_info() {
   $items = [];
 
   $items['jbrowse'] = [
